@@ -227,6 +227,7 @@ end;
 $$;
 
 revoke all on function public.create_public_appointment(uuid, uuid, date, time, text, text, text) from public;
-grant execute on function public.create_public_appointment(uuid, uuid, date, time, text, text, text) to anon, authenticated;
+revoke all on function public.create_public_appointment(uuid, uuid, date, time, text, text, text) from anon, authenticated;
+grant execute on function public.create_public_appointment(uuid, uuid, date, time, text, text, text) to service_role;
 
 commit;

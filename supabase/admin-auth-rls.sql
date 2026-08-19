@@ -8,6 +8,11 @@ alter table public.doctors enable row level security;
 alter table public.availability enable row level security;
 alter table public.appointments enable row level security;
 
+-- Keep the internal doctor phone column out of direct anon queries. The
+-- booking catalog only needs these public columns.
+revoke all on table public.doctors from anon;
+grant select (id, name, specialty, active, created_at) on table public.doctors to anon;
+
 -- Remove the temporary demo policies that exposed patient data and mutations
 -- to anyone holding the public anon key.
 drop policy if exists "public can read services" on public.services;
@@ -39,7 +44,7 @@ create policy "public reads active services"
   using (active = true);
 
 create policy "public reads active doctors"
-  on public.doctors for select to anon, authenticated
+  on public.doctors for select to anon
   using (active = true);
 
 create policy "public reads available schedule"
@@ -156,6 +161,7 @@ end;
 $$;
 
 revoke all on function public.create_public_appointment(uuid, uuid, date, time, text, text, text) from public;
-grant execute on function public.create_public_appointment(uuid, uuid, date, time, text, text, text) to anon, authenticated;
+revoke all on function public.create_public_appointment(uuid, uuid, date, time, text, text, text) from anon, authenticated;
+grant execute on function public.create_public_appointment(uuid, uuid, date, time, text, text, text) to service_role;
 
 commit;

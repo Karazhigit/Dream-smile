@@ -2,6 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { BookingSlot } from "@/types";
 import type { Database } from "@/types/database";
+import { safeServerError } from "@/lib/api-security";
 
 const CLINIC_TIME_ZONE="Asia/Almaty";
 const SLOT_STEP_MINUTES=60;
@@ -54,7 +55,7 @@ async function getBlockingAppointments(supabase:SupabaseClient<Database>,doctorI
 export async function getAvailabilityRange(supabase:SupabaseClient<Database>,serviceId:string,doctorId:string|undefined,from:string,to:string,excludeAppointmentId?:string):Promise<Record<string,BookingSlot[]>>{
   let doctorsQuery=supabase.from("doctors").select("id").eq("active",true);if(doctorId)doctorsQuery=doctorsQuery.eq("id",doctorId);
   const[{data:service,error:serviceError},{data:doctors,error:doctorsError}]=await Promise.all([supabase.from("services").select("id,duration_minutes").eq("id",serviceId).eq("active",true).maybeSingle(),doctorsQuery]);
-  if(serviceError||doctorsError){console.error("[availability] Catalog query failed",{serviceError,doctorsError});throw new Error("availability_catalog_query_failed")}
+  if(serviceError||doctorsError){if(serviceError)safeServerError("availability catalog service",serviceError);if(doctorsError)safeServerError("availability catalog doctors",doctorsError);throw new Error("availability_catalog_query_failed")}
   if(!service||!doctors?.length)return{};
   const doctorIds=doctors.map(row=>row.id);const duration=Math.max(service.duration_minutes??DEFAULT_DURATION_MINUTES,1);
 
@@ -64,9 +65,9 @@ export async function getAvailabilityRange(supabase:SupabaseClient<Database>,ser
     supabase.from("availability").select("doctor_id,date,start_time,end_time").gte("date",from).lte("date",to).eq("available",true).in("doctor_id",doctorIds),
     getBlockingAppointments(supabase,doctorIds,from,to,excludeAppointmentId),
   ]);
-  if(legacyResult.error||blockingResult.error){console.error("[availability] Slot source query failed",{availabilityError:legacyResult.error,appointmentsError:blockingResult.error});throw new Error("availability_slot_source_query_failed")}
-  if(schedulesResult.error&&!missingRelation(schedulesResult.error)){console.error("[availability] Schedule query failed",schedulesResult.error);throw new Error("availability_schedule_query_failed")}
-  if(exceptionsResult.error&&!missingRelation(exceptionsResult.error)){console.error("[availability] Exception query failed",exceptionsResult.error);throw new Error("availability_exception_query_failed")}
+  if(legacyResult.error||blockingResult.error){if(legacyResult.error)safeServerError("availability legacy",legacyResult.error);if(blockingResult.error)safeServerError("availability appointments",blockingResult.error);throw new Error("availability_slot_source_query_failed")}
+  if(schedulesResult.error&&!missingRelation(schedulesResult.error)){safeServerError("availability schedule",schedulesResult.error);throw new Error("availability_schedule_query_failed")}
+  if(exceptionsResult.error&&!missingRelation(exceptionsResult.error)){safeServerError("availability exception",exceptionsResult.error);throw new Error("availability_exception_query_failed")}
 
   const schedules=schedulesResult.error?[]:schedulesResult.data??[];const exceptions=exceptionsResult.error?[]:exceptionsResult.data??[];
   const scheduleDoctors=new Set(schedules.map(row=>row.doctor_id));

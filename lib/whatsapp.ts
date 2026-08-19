@@ -1,6 +1,6 @@
 import type { Appointment } from "@/types";
 import { normalizeKazakhstanPhone } from "./phone.ts";
-import { clinicConfig } from "./clinic-config";
+import { clinicConfig } from "./clinic-config.ts";
 
 type WhatsAppAppointment=Pick<Appointment,"patientName"|"patientPhone"|"appointmentDate"|"appointmentTime"|"status"|"doctor"|"service">;
 

@@ -24,6 +24,8 @@ create index if not exists doctor_accounts_doctor_idx on public.doctor_accounts(
 alter table public.doctor_accounts enable row level security;
 revoke all on table public.doctor_accounts from anon;
 grant select, insert, update, delete on table public.doctor_accounts to authenticated;
+revoke all on table public.doctors from anon;
+grant select (id, name, specialty, active, created_at) on table public.doctors to anon;
 
 drop policy if exists "doctors read own account" on public.doctor_accounts;
 drop policy if exists "admins manage doctor accounts" on public.doctor_accounts;

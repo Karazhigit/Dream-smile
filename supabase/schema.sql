@@ -34,28 +34,54 @@ alter table public.doctors enable row level security;
 alter table public.availability enable row level security;
 alter table public.appointments enable row level security;
 
+revoke all on table public.doctors from anon;
+grant select (id, name, specialty, active, created_at) on table public.doctors to anon;
+
 drop policy if exists "public can read services" on public.services;
 drop policy if exists "public can read doctors" on public.doctors;
 drop policy if exists "public can read availability" on public.availability;
-drop policy if exists "demo admin reads appointments" on public.appointments;
 drop policy if exists "public can read occupied slots" on public.appointments;
 drop policy if exists "public can create new requests" on public.appointments;
+drop policy if exists "demo admin reads appointments" on public.appointments;
 drop policy if exists "demo admin updates appointments" on public.appointments;
 drop policy if exists "demo admin inserts services" on public.services;
 drop policy if exists "demo admin updates services" on public.services;
 drop policy if exists "demo admin inserts doctors" on public.doctors;
 drop policy if exists "demo admin updates doctors" on public.doctors;
+drop policy if exists "public reads active services" on public.services;
+drop policy if exists "public reads active doctors" on public.doctors;
+drop policy if exists "public reads available schedule" on public.availability;
+drop policy if exists "admins read all services" on public.services;
+drop policy if exists "admins insert services" on public.services;
+drop policy if exists "admins update services" on public.services;
+drop policy if exists "admins read all doctors" on public.doctors;
+drop policy if exists "admins insert doctors" on public.doctors;
+drop policy if exists "admins update doctors" on public.doctors;
+drop policy if exists "admins read appointments" on public.appointments;
+drop policy if exists "admins update appointments" on public.appointments;
 
-create policy "public can read services" on public.services for select to anon, authenticated using (true);
-create policy "public can read doctors" on public.doctors for select to anon, authenticated using (true);
-create policy "public can read availability" on public.availability for select to anon, authenticated using (available = true);
-create policy "public can create new requests" on public.appointments for insert to anon, authenticated with check (status = 'new');
+-- Production-safe baseline. Public appointment creation is provided only by
+-- the validated security-definer RPC in the later auth/schedule migrations.
+create policy "public reads active services" on public.services for select to anon, authenticated using (active = true);
+create policy "public reads active doctors" on public.doctors for select to anon using (active = true);
+create policy "public reads available schedule" on public.availability for select to anon, authenticated using (available = true);
 
--- TEMPORARY DEMO ADMIN POLICIES. Replace with authenticated staff policies before launch.
--- The read policy exposes appointment details to the anon role and must never be used with production data.
-create policy "demo admin reads appointments" on public.appointments for select to anon, authenticated using (true);
-create policy "demo admin updates appointments" on public.appointments for update to anon, authenticated using (true) with check (status in ('new','confirmed','completed','cancelled'));
-create policy "demo admin inserts services" on public.services for insert to anon, authenticated with check (true);
-create policy "demo admin updates services" on public.services for update to anon, authenticated using (true) with check (true);
-create policy "demo admin inserts doctors" on public.doctors for insert to anon, authenticated with check (true);
-create policy "demo admin updates doctors" on public.doctors for update to anon, authenticated using (true) with check (true);
+create policy "admins read all services" on public.services for select to authenticated
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+create policy "admins insert services" on public.services for insert to authenticated
+  with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+create policy "admins update services" on public.services for update to authenticated
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin')
+  with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+create policy "admins read all doctors" on public.doctors for select to authenticated
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+create policy "admins insert doctors" on public.doctors for insert to authenticated
+  with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+create policy "admins update doctors" on public.doctors for update to authenticated
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin')
+  with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+create policy "admins read appointments" on public.appointments for select to authenticated
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+create policy "admins update appointments" on public.appointments for update to authenticated
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin')
+  with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
