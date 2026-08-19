@@ -21,11 +21,13 @@ create table if not exists public.appointments (
   doctor_id uuid not null references public.doctors(id) on delete restrict,
   appointment_date date not null, appointment_time time not null,
   status text not null default 'new' check (status in ('new','confirmed','completed','cancelled')),
-  created_at timestamptz not null default now(),
-  constraint appointments_doctor_slot_unique unique (doctor_id, appointment_date, appointment_time)
+  created_at timestamptz not null default now()
 );
 create index if not exists appointments_date_idx on public.appointments(appointment_date);
 create index if not exists availability_doctor_date_idx on public.availability(doctor_id, date);
+create index if not exists availability_available_date_doctor_idx on public.availability(date, doctor_id) where available = true;
+create index if not exists appointments_date_doctor_time_idx on public.appointments(appointment_date, doctor_id, appointment_time);
+create unique index if not exists appointments_active_doctor_slot_unique on public.appointments(doctor_id, appointment_date, appointment_time) where status in ('new','confirmed');
 
 alter table public.services enable row level security;
 alter table public.doctors enable row level security;
