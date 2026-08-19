@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-:root { --background:#f6f8f8; --surface:#fff; --text:#17252a; --primary:#176b73; --primary-dark:#0f4e55; --secondary:#ddedee; --accent:#c5a56a; --muted:#718086; --border:#dfe5e5; }
+:root { --background:#f6f8f8; --surface:#fff; --text:#17252a; --primary:#176b73; --primary-dark:#0f4e55; --secondary:#ddedee; --accent:#c5a56a; --muted:#63747a; --border:#dfe5e5; }
 @theme inline { --color-background:var(--background); --color-surface:var(--surface); --color-ink:var(--text); --color-primary:var(--primary); --color-primary-dark:var(--primary-dark); --color-secondary:var(--secondary); --color-accent:var(--accent); --color-muted:var(--muted); --color-line:var(--border); --font-sans:"Segoe UI",Arial,sans-serif; --font-serif:Georgia,"Times New Roman",serif; }
 * { box-sizing:border-box; }
 html { scroll-behavior:smooth; scroll-padding-top:88px; }
@@ -51,5 +51,5 @@ main:has(> aside) article:hover { background-color:rgba(221,237,238,.2); }
 @keyframes loading-spin { to { transform:rotate(360deg) } }
 @keyframes motion-message-in { from { opacity:0; transform:translateY(-5px) } to { opacity:1; transform:translateY(0) } }
 @keyframes motion-success-in { from { opacity:0; transform:scale(.94) } to { opacity:1; transform:scale(1) } }
-@media(max-width:640px){.container-page{width:min(100% - 28px,1200px)}.btn-primary,.btn-secondary{width:100%;padding-inline:18px}.section-pad{padding-block:72px}}
+@media(max-width:640px){.container-page{width:min(100% - 28px,1200px)}.btn-primary,.btn-secondary{width:100%;padding-inline:18px}.section-pad{padding-block:64px}.display-title{font-size:clamp(38px,12vw,48px)}.section-title{font-size:clamp(32px,10vw,40px)}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}.motion-reveal,.motion-page-enter,.motion-route,.motion-menu,.motion-card,.motion-image,.motion-success-icon{opacity:1!important;transform:none!important}.loading-spinner{animation-duration:1.4s!important}}
