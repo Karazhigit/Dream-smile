@@ -34,7 +34,7 @@ async function fetchJson<T>(url:string,options?:RequestInit):Promise<T>{
 
 export function getCatalog(options?:{force?:boolean}){
   if(!options?.force&&fresh(catalogCache)){if(catalogCache?.value)return Promise.resolve(catalogCache.value);if(catalogCache?.promise)return catalogCache.promise}
-  const promise=fetchJson<Catalog>("/api/catalog",{cache:"no-store"}).then(value=>{catalogCache={value,expiresAt:Date.now()+catalogTtl};return value}).catch(error=>{catalogCache=undefined;throw error});
+  const promise=fetchJson<Catalog>("/api/catalog",options?.force?{cache:"reload"}:undefined).then(value=>{catalogCache={value,expiresAt:Date.now()+catalogTtl};return value}).catch(error=>{catalogCache=undefined;throw error});
   catalogCache={promise,expiresAt:Date.now()+catalogTtl};return promise;
 }
 

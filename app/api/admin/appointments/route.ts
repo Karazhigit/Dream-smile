@@ -3,6 +3,7 @@ import { archiveCutoffDate } from "@/lib/clinic-date";
 import type { AppointmentStatus } from "@/types/database";
 import { getAvailableSlots } from "@/lib/supabase/queries";
 import { normalizeKazakhstanPhone } from "@/lib/phone";
+import { measureServerDuration } from "@/lib/server-duration";
 
 const statuses:AppointmentStatus[]=["new","confirmed","completed","cancelled"];
 const uuidPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -23,6 +24,7 @@ async function requireAppointmentAdmin(){
   return auth;
 }
 export async function GET(request:Request){
+  const startedAt=Date.now();
   const auth=await requireAdminApi();if("response" in auth)return auth.response;const{supabase}=auth;
   const searchParams=new URL(request.url).searchParams;const date=searchParams.get("date");const status=searchParams.get("status") as AppointmentStatus|null;
   if(date&&!/^\d{4}-\d{2}-\d{2}$/.test(date))return Response.json({error:"Некорректная дата."},{status:400});
@@ -30,7 +32,7 @@ export async function GET(request:Request){
   let query=supabase.from("appointments").select("*,service:services!appointments_service_id_fkey(id,name),doctor:doctors!appointments_doctor_id_fkey(id,name,specialty,phone)").or(`status.in.(new,confirmed),appointment_date.gte.${archiveCutoffDate()}`).order("appointment_date").order("appointment_time");if(date)query=query.eq("appointment_date",date);if(status)query=query.eq("status",status);
   const {data,error}=await query;if(error){console.error("[api/admin/appointments GET] Supabase query failed",error);return Response.json({error:"Не удалось загрузить записи."},{status:500})}
   type JoinedAppointment={id:string;patient_name:string;patient_phone:string;comment:string|null;service_id:string;doctor_id:string;appointment_date:string;appointment_time:string;status:AppointmentStatus;created_at:string;service:{id:string;name:string}|null;doctor:{id:string;name:string|null;specialty:string;phone:string|null}|null};
-  return Response.json({appointments:((data??[]) as unknown as JoinedAppointment[]).map(item=>({id:item.id,patientName:item.patient_name,patientPhone:item.patient_phone,comment:item.comment,serviceId:item.service_id,doctorId:item.doctor_id,appointmentDate:item.appointment_date,appointmentTime:item.appointment_time.slice(0,5),status:item.status,createdAt:item.created_at,service:item.service,doctor:item.doctor}))});
+  const durationMs=measureServerDuration("api.admin.appointments",startedAt);return Response.json({appointments:((data??[]) as unknown as JoinedAppointment[]).map(item=>({id:item.id,patientName:item.patient_name,patientPhone:item.patient_phone,comment:item.comment,serviceId:item.service_id,doctorId:item.doctor_id,appointmentDate:item.appointment_date,appointmentTime:item.appointment_time.slice(0,5),status:item.status,createdAt:item.created_at,service:item.service,doctor:item.doctor}))},{headers:{"Cache-Control":"no-store, max-age=0","Server-Timing":`appointments;dur=${durationMs}`}});
 }
 
 export async function POST(request:Request){

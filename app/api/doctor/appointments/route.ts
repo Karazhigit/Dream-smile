@@ -1,10 +1,12 @@
 import { requireDoctorApi } from "@/lib/supabase/doctor-auth";
 import { clinicToday, clinicTomorrow } from "@/lib/clinic-date";
 import type { AppointmentStatus } from "@/types/database";
+import { measureServerDuration } from "@/lib/server-duration";
 
 const relationSelect="*,service:services!appointments_service_id_fkey(id,name)";
 
 export async function GET(request:Request){
+  const startedAt=Date.now();
   const auth=await requireDoctorApi();if("response" in auth)return auth.response;const{supabase,doctor}=auth;
   const params=new URL(request.url).searchParams;const requestedDoctorId=params.get("doctorId");if(requestedDoctorId&&requestedDoctorId!==doctor.id)return Response.json({error:"Нет доступа к записям другого врача."},{status:403});const filter=params.get("filter")??"today";if(!["today","tomorrow","upcoming"].includes(filter))return Response.json({error:"Некорректный фильтр."},{status:400});
   let query=supabase.from("appointments").select(relationSelect).eq("doctor_id",doctor.id).order("appointment_date").order("appointment_time");
@@ -12,7 +14,7 @@ export async function GET(request:Request){
   const{data,error}=await query;if(error){console.error("[api/doctor/appointments GET] Query failed",{code:error.code,message:error.message});return Response.json({error:"Не удалось загрузить записи."},{status:500})}
   type Joined={id:string;patient_name:string;patient_phone:string;comment:string|null;service_id:string;doctor_id:string;appointment_date:string;appointment_time:string;status:AppointmentStatus;created_at:string;service:{id:string;name:string}|null};
   const appointments=((data??[]) as unknown as Joined[]).map(item=>({id:item.id,patientName:item.patient_name,patientPhone:item.patient_phone,comment:item.comment,serviceId:item.service_id,doctorId:item.doctor_id,appointmentDate:item.appointment_date,appointmentTime:item.appointment_time.slice(0,5),status:item.status,createdAt:item.created_at,service:item.service,doctor}));
-  return Response.json({appointments},{headers:{"Cache-Control":"no-store, max-age=0"}});
+  const durationMs=measureServerDuration("api.doctor.appointments",startedAt);return Response.json({appointments},{headers:{"Cache-Control":"no-store, max-age=0","Server-Timing":`appointments;dur=${durationMs}`}});
 }
 
 export async function PATCH(request:Request){
