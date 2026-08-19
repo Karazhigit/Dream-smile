@@ -1,5 +1,6 @@
 import type { Appointment } from "@/types";
 import { normalizeKazakhstanPhone } from "./phone.ts";
+import { clinicConfig } from "./clinic-config";
 
 type WhatsAppAppointment=Pick<Appointment,"patientName"|"patientPhone"|"appointmentDate"|"appointmentTime"|"status"|"doctor"|"service">;
 
@@ -17,9 +18,9 @@ export function buildWhatsAppMessage(appointment:WhatsAppAppointment){
   const serviceName=appointment.service?.name||"—";
   const details=`Дата: ${formatWhatsAppDate(appointment.appointmentDate)}\nВремя: ${appointment.appointmentTime}\nСпециалист: ${doctorName}\nУслуга: ${serviceName}`;
 
-  if(appointment.status==="new")return `Здравствуйте, ${appointment.patientName}!\n\nВы оставили заявку на запись в стоматологию Dream Smile.\n\n${details}\n\nМы свяжемся с вами для подтверждения записи.\n\nС уважением,\nDream Smile`;
+  if(appointment.status==="new")return `Здравствуйте, ${appointment.patientName}!\n\nВы оставили заявку на запись в стоматологию ${clinicConfig.name}.\n\n${details}\n\nМы свяжемся с вами для подтверждения записи.\n\nС уважением,\n${clinicConfig.name}`;
 
-  return `Здравствуйте, ${appointment.patientName}!\n\nНапоминаем, что вы записаны в стоматологию Dream Smile.\n\n${details}\n\nЕсли ваши планы изменились, пожалуйста, сообщите нам заранее.\n\nС уважением,\nDream Smile`;
+  return `Здравствуйте, ${appointment.patientName}!\n\nНапоминаем, что вы записаны в стоматологию ${clinicConfig.name}.\n\n${details}\n\nЕсли ваши планы изменились, пожалуйста, сообщите нам заранее.\n\nС уважением,\n${clinicConfig.name}`;
 }
 
 export function createWhatsAppUrl(appointment:WhatsAppAppointment){
@@ -31,7 +32,7 @@ type DoctorWhatsAppAppointment=Pick<Appointment,"patientName"|"appointmentDate"|
 
 export function buildDoctorWhatsAppMessage(appointment:DoctorWhatsAppAppointment,siteUrl:string){
   const doctorName=appointment.doctor?.name||appointment.doctor?.specialty||"специалист";
-  return `Здравствуйте, ${doctorName}!\n\nУ вас новая запись в Dream Smile.\n\nПациент: ${appointment.patientName}\nДата: ${formatWhatsAppDate(appointment.appointmentDate)}\nВремя: ${appointment.appointmentTime}\nУслуга: ${appointment.service?.name||"—"}\n\nОткройте кабинет врача для подробностей.\n\nСсылка:\n${siteUrl.replace(/\/$/,"")}/doctor`;
+  return `Здравствуйте, ${doctorName}!\n\nУ вас новая запись в ${clinicConfig.name}.\n\nПациент: ${appointment.patientName}\nДата: ${formatWhatsAppDate(appointment.appointmentDate)}\nВремя: ${appointment.appointmentTime}\nУслуга: ${appointment.service?.name||"—"}\n\nОткройте кабинет врача для подробностей.\n\nСсылка:\n${siteUrl.replace(/\/$/,"")}/doctor`;
 }
 
 export function buildDoctorWhatsAppUrl(appointment:DoctorWhatsAppAppointment,siteUrl:string){
