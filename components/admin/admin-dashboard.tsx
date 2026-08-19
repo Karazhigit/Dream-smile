@@ -11,6 +11,7 @@ import { AppointmentEditorModal } from "@/components/admin/appointment-editor-mo
 import { buildDoctorWhatsAppUrl, createWhatsAppUrl } from "@/lib/whatsapp";
 import { formatKazakhstanPhone } from "@/lib/phone";
 import { DoctorAccountModal, type DoctorAccountAction } from "@/components/admin/doctor-account-modal";
+import { getSiteUrl } from "@/lib/site-url";
 
 type Screen=AdminSection;
 type AppointmentFilter="today"|"tomorrow"|"all"|"new";
@@ -32,7 +33,7 @@ export function AdminDashboard({initialScreen="appointments"}:{initialScreen?:Sc
   return <><main className="min-h-screen bg-background lg:grid lg:grid-cols-[250px_1fr]"><AdminSidebar active={screen} onSelect={setScreen}/><section className="min-w-0 p-4 sm:p-7 lg:p-10"><div className="mx-auto max-w-[1180px]"><div className="rounded-xl border border-accent/40 bg-[#fbf7ef] p-4 text-sm font-bold text-ink">Защищённая админ-панель Dream Smile</div>{connected===false?<Disconnected/>:<>{error&&<p role="alert" className="motion-message mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">{error}</p>}{loadError?<LoadError message={loadError} retry={()=>setReloadKey(value=>value+1)}/>:<PageTransition key={screen}>{screen==="appointments"&&<AppointmentsScreen items={appointments} filter={filter} setFilter={setFilter} updateStatus={updateStatus} updatingId={updatingId} loading={appointmentsLoading} refreshing={refreshing} refresh={()=>{void loadAppointments(true)}} onCreate={()=>setEditorAppointment(null)} onReschedule={setEditorAppointment}/>} {screen==="calendar"&&<CalendarScreen items={appointments} selectedDate={selectedDate} setSelectedDate={setSelectedDate} updateStatus={updateStatus} updatingId={updatingId} busy={appointmentsLoading} onReschedule={setEditorAppointment}/>} {screen==="services"&&<ServicesScreen items={services} setItems={setServices} save={saveService} reload={loadServices} request={request} busy={busy||dataLoading}/>} {screen==="doctors"&&<DoctorsScreen items={doctors} setItems={setDoctors} save={saveDoctor} reload={loadDoctors} request={request} busy={busy||dataLoading} openAccount={(doctor,action)=>setAccountEditor({doctor,action})}/>} {screen==="schedule"&&<ScheduleScreen/>}</PageTransition>}</>}</div></section></main>{editorAppointment!==undefined&&<AppointmentEditorModal appointment={editorAppointment} onClose={()=>setEditorAppointment(undefined)} onSaved={message=>{clearAvailabilityCache();setEditorAppointment(undefined);setToast(message);void loadAppointments(true)}}/>}{accountEditor&&<DoctorAccountModal doctor={accountEditor.doctor} action={accountEditor.action} onClose={()=>setAccountEditor(null)} onSuccess={(message,account)=>{if(accountEditor.action!=="password")setDoctors(items=>items.map(item=>item.id===accountEditor.doctor.id?{...item,account:account??null}:item));setAccountEditor(null);setToast(message)}}/>}{toast&&<div role="status" className="motion-message fixed bottom-5 right-5 z-[130] max-w-[calc(100vw-40px)] rounded-xl bg-primary-dark px-5 py-4 text-sm font-bold text-white shadow-xl">{toast}</div>}</>
 }
 
-function Disconnected(){return <div className="mt-8 rounded-2xl border border-line bg-white p-8"><h1 className="font-serif text-4xl">Supabase не подключён.</h1><p className="mt-4 text-sm leading-7 text-muted">Добавьте NEXT_PUBLIC_SUPABASE_URL и NEXT_PUBLIC_SUPABASE_ANON_KEY, затем перезапустите приложение.</p></div>}
+function Disconnected(){return <div className="mt-8 rounded-2xl border border-line bg-white p-8"><h1 className="font-serif text-4xl">Supabase не подключён.</h1><p className="mt-4 text-sm leading-7 text-muted">Добавьте NEXT_PUBLIC_SUPABASE_URL и NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (или legacy NEXT_PUBLIC_SUPABASE_ANON_KEY), затем перезапустите приложение.</p></div>}
 function LoadError({message,retry}:{message:string;retry:()=>void}){return <div role="alert" className="motion-message mt-8 rounded-2xl border border-red-200 bg-red-50 p-6 text-sm font-bold text-red-700"><p>{message}</p><button type="button" onClick={retry} className="mt-4 min-h-10 rounded-xl border border-red-200 bg-white px-4 text-xs">Повторить</button></div>}
 function Header({title,description,action}:{title:string;description:string;action?:React.ReactNode}){return <div className="mt-8 flex flex-wrap items-end justify-between gap-4"><div><h1 className="font-serif text-4xl">{title}</h1><p className="mt-2 text-sm text-muted">{description}</p></div>{action}</div>}
 function Empty({busy}:{busy:boolean}){return <p className="p-6 text-sm text-muted">{busy?"Загрузка…":"Данных пока нет."}</p>}
@@ -53,7 +54,7 @@ function AppointmentRow({item,updateStatus,updating,onReschedule}:{item:Appointm
     window.open(url,"_blank","noopener,noreferrer");
   }
   function notifyDoctor(){
-    const url=buildDoctorWhatsAppUrl(item,window.location.origin);
+    const url=buildDoctorWhatsAppUrl(item,getSiteUrl());
     if(!url){setContactError("У специалиста не указан корректный номер WhatsApp.");return}
     setContactError("");window.open(url,"_blank","noopener,noreferrer");
   }

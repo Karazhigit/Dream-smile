@@ -1,10 +1,11 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/types/database";
+import { getSupabasePublicKey } from "@/lib/supabase/public-config";
 
 export async function proxy(request:NextRequest){
   const url=process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const anonKey=getSupabasePublicKey();
   const pathname=request.nextUrl.pathname;const doctorRoute=pathname.startsWith("/doctor");const loginPath=doctorRoute?"/doctor/login":"/admin/login";
   if(!url||!anonKey)return pathname===loginPath?NextResponse.next({request}):NextResponse.redirect(new URL(loginPath,request.url));
 
